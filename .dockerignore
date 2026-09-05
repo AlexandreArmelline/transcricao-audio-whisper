@@ -1,0 +1,18 @@
+# =============================================================================
+# .dockerignore — caso queira gerar imagem Docker do projeto
+# =============================================================================
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.git/
+.gitignore
+backend/uploads/
+backend/models/
+transcricoes/
+*.log
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

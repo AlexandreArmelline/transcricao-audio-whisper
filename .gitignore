@@ -1,0 +1,45 @@
+# =============================================================================
+# .gitignore — arquivos que NÃO devem ir para o repositório/deploy
+# =============================================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Pastas de dados geradas em tempo de execução
+backend/uploads/
+transcricoes/
+
+# Logs
+*.log
+server_log.txt
+servidor*.log
+
+# Arquivos temporários de teste local
+backend/testar_precisao.py
+backend/teste_voz.wav
+backend/baixar_modelo.py
+backend/download_modelo*.log
+
+# Modelos Whisper baixados (cache local)
+models/
+.cache/huggingface/
+
+# VS Code / IDE
+.vscode/
+.idea/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Ambiente
+.env
+.env.local
+
+# DeepCraft (chats locais da ferramenta)
+.deepcraft-chats/

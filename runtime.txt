@@ -1,0 +1,8 @@
+# =============================================================================
+# runtime.txt — versão do Python exigida (para plataformas que usam este arquivo)
+# =============================================================================
+# Use uma versão estável e compatível com faster-whisper. O Render suporta
+# python-3.11.x e 3.12.x. Se sua plataforma usa outra sintaxe (ex.: buildpacks),
+# consulte a documentação — algumas usam apenas "python-3.11.9".
+# =============================================================================
+python-3.11.9

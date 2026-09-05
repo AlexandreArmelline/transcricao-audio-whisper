@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<!-- =========================================================================
+     BLOCO 1 - ESTRUTURA BASE DO DOCUMENTO HTML
+     ========================================================================= -->
+<html lang="pt-BR">
+<head>
+    <!-- 1.1 Metadados da página -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sistema web para gravação e transcrição de áudio.">
+    <title>Transcreve Áudio — Gravar e Transcrever</title>
+
+    <!-- 1.2 Importação do CSS do projeto -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<!-- 1.3 Corpo da página -->
+<body>
+
+    <!-- ---------------------------------------------------------------------
+         BLOCO 2 - CABEÇALHO DA PÁGINA
+         --------------------------------------------------------------------- -->
+    <header class="topo">
+        <div class="topo__conteudo">
+            <h1 class="topo__titulo">🎙️ Transcreve Áudio</h1>
+            <p class="topo__subtitulo">Grave sua voz e obtenha a transcrição automaticamente</p>
+        </div>
+    </header>
+
+    <!-- ---------------------------------------------------------------------
+         BLOCO 3 - CONTEÚDO PRINCIPAL
+         --------------------------------------------------------------------- -->
+    <main class="principal">
+
+        <!-- 3.1 Cartão do gravador -->
+        <section class="cartao" id="cartao-gravador">
+            <h2 class="cartao__titulo">1️⃣ Gravar áudio</h2>
+            <p class="cartao__texto">
+                Clique no botão abaixo para iniciar a gravação do seu microfone.
+                A permissão de uso do microfone será solicitada pelo navegador.
+            </p>
+
+            <!-- 3.1.1 Indicador de status da gravação -->
+            <div class="status" id="status" role="status" aria-live="polite">
+                ⏸️ Pronto para gravar
+            </div>
+
+            <!-- 3.1.2 Cronômetro da gravação -->
+            <div class="cronometro" id="cronometro">00:00</div>
+
+            <!-- 3.1.3 Botões de controle do gravador -->
+            <div class="botoes" id="controles-gravacao">
+                <button type="button" class="botao botao--gravar" id="btn-gravar">🎤 Gravar</button>
+                <button type="button" class="botao botao--parar" id="btn-parar" disabled>⏹️ Parar</button>
+                <button type="button" class="botao botao--apagar" id="btn-apagar" disabled>🗑️ Apagar</button>
+            </div>
+
+            <!-- 3.1.4 Player para ouvir o áudio gravado -->
+            <div class="player" id="player-audio" hidden>
+                <audio id="audio-playback" controls></audio>
+            </div>
+
+            <!-- 3.1.5 Upload de um áudio já existente (funciona em qualquer dispositivo) -->
+            <div class="campo campo--upload">
+                <label class="botao botao--arquivo" for="input-arquivo">
+                    📂 Enviar um arquivo de áudio
+                </label>
+                <input type="file" id="input-arquivo" accept="audio/*" hidden>
+                <span class="campo__ajuda" id="nome-arquivo-ajuda">
+                    MP3, WAV, M4A, OGG, WEBM ou OPUS
+                </span>
+            </div>
+        </section>
+
+        <!-- 3.2 Cartão de transcrição -->
+        <section class="cartao" id="cartao-transcricao">
+            <h2 class="cartao__titulo">2️⃣ Transcrição</h2>
+            <p class="cartao__texto">
+                Após gravar, clique em <strong>Transcrever</strong> para converter a fala em texto.
+                O áudio é enviado ao servidor e transcrito com a <strong>IA Whisper</strong> — modelo
+                <strong>{{ modelo_ativo }}</strong> com precisão
+                <strong>{{ compute_type }}</strong> — que analisa o arquivo completo, em qualquer navegador
+                ou celular.
+                <em>(A primeira transcrição demora um pouco, pois o modelo de IA precisa ser carregado. As próximas são rápidas.)</em>
+            </p>
+
+            <!-- 3.2.1 Área de seleção de idioma -->
+            <div class="campo">
+                <label class="campo__rotulo" for="select-idioma">🌐 Idioma da fala</label>
+                <select id="select-idioma" class="campo__select">
+                    <option value="pt-BR" selected>🇧🇷 Português (Brasil)</option>
+                    <option value="en-US">🇺🇸 Inglês (Estados Unidos)</option>
+                    <option value="es-ES">🇪🇸 Espanhol</option>
+                    <option value="fr-FR">🇫🇷 Francês</option>
+                    <option value="de-DE">🇩🇪 Alemão</option>
+                    <option value="it-IT">🇮🇹 Italiano</option>
+                </select>
+            </div>
+
+            <!-- 3.2.2 Botão que inicia a transcrição -->
+            <div class="botoes">
+                <button type="button" class="botao botao--transcrever" id="btn-transcrever" disabled>
+                    📝 Transcrever áudio
+                </button>
+            </div>
+
+            <!-- 3.2.3 Status da transcrição -->
+            <div class="status status--transcricao" id="status-transcricao" role="status" aria-live="polite">
+                ⏸️ Aguardando áudio para transcrever
+            </div>
+
+            <!-- 3.2.4 Área onde o texto transcrito é exibido -->
+            <textarea class="resultado" id="resultado" rows="10"
+                placeholder="O texto transcrito aparecerá aqui..." readonly></textarea>
+
+            <!-- 3.2.5 Botão para copiar o texto -->
+            <button type="button" class="botao botao--copiar" id="btn-copiar" disabled>📋 Copiar texto</button>
+
+            <!-- 3.2.6 Botão para salvar o texto em arquivo .txt no servidor -->
+            <button type="button" class="botao botao--salvar" id="btn-salvar" disabled>💾 Salvar transcrição</button>
+        </section>
+
+        <!-- 3.3 Cartão com o histórico de transcrições salvas -->
+        <section class="cartao" id="cartao-historico">
+            <h2 class="cartao__titulo">📂 Transcrições salvas</h2>
+            <button type="button" class="botao botao--atualizar" id="btn-atualizar">🔄 Atualizar lista</button>
+            <ul class="lista" id="lista-transcricoes"></ul>
+            <p class="aviso" id="aviso-lista">Nenhuma transcrição salva ainda.</p>
+        </section>
+
+        <!-- 3.4 Área de mensagens gerais -->
+        <div class="mensagem" id="mensagem" role="alert" hidden></div>
+    </main>
+
+    <!-- ---------------------------------------------------------------------
+         BLOCO 4 - RODAPÉ DA PÁGINA
+         --------------------------------------------------------------------- -->
+    <footer class="rodape">
+        <p>🎧 Sistema de gravação e transcrição de áudio — feito com HTML, CSS, JavaScript e Flask</p>
+    </footer>
+
+    <!-- ---------------------------------------------------------------------
+         BLOCO 5 - SCRIPTS JAVASCRIPT
+         --------------------------------------------------------------------- -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
+<!-- -------------------------------------------------------------------------
+     Fim sub-bloco 1.3 Corpo da página
+     -------------------------------------------------------------------------
+
+     ÍNDICE
+     1 ESTRUTURA BASE DO DOCUMENTO HTML
+       1.1 Metadados da página
+       1.2 Importação do CSS do projeto
+       1.3 Corpo da página
+     2 CABEÇALHO DA PÁGINA
+     3 CONTEÚDO PRINCIPAL
+       3.1 Cartão do gravador
+       3.2 Cartão de transcrição
+       3.3 Cartão com o histórico de transcrições salvas
+       3.4 Área de mensagens gerais
+     4 RODAPÉ DA PÁGINA
+     5 SCRIPTS JAVASCRIPT
+     ------------------------------------------------------------------------- -->

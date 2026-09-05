@@ -1,0 +1,25 @@
+# =============================================================================
+# Dependências do Backend — Sistema de Transcrição de Áudio
+# =============================================================================
+
+# Framework web
+Flask>=3.0.0
+
+# Transcrição de áudio com IA (Whisper otimizado para CPU)
+faster-whisper>=1.0.0
+
+# Detecção de memória RAM disponível (escolhe o melhor modelo Whisper)
+psutil>=5.9.0
+
+# Servidor WSGI de produção (usado no deploy via Procfile / gunicorn)
+gunicorn>=21.2.0
+
+# -----------------------------------------------------------------------------
+# OBSERVAÇÕES SOBRE AS DEPENDÊNCIAS:
+# 1. faster-whisper baixa automaticamente o modelo Whisper escolhido na
+#    PRIMEIRA transcrição (precisa de internet nesse momento).
+#    Recomenda-se pré-baixar o modelo durante o build do deploy (ver README).
+# 2. Em plataformas com Python 3.11+, todas as bibliotecas acima têm
+#    suporte completo. Para servidores Windows use waitress no lugar do
+#    gunicorn (gunicorn só funciona em Linux/macOS).
+# =============================================================================

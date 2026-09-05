@@ -1,0 +1,499 @@
+/* ==========================================================================
+   BLOCO 1 - VARIÁVEIS E RESET GLOBAL
+   ========================================================================== */
+
+/* 1.1 Variáveis de cores, fontes e espaçamentos */
+:root {
+    --cor-primaria: #4f46e5;
+    --cor-primaria-escura: #4338ca;
+    --cor-gradiente-1: #667eea;
+    --cor-gradiente-2: #764ba2;
+    --cor-sucesso: #10b981;
+    --cor-sucesso-escura: #059669;
+    --cor-perigo: #ef4444;
+    --cor-perigo-escura: #dc2626;
+    --cor-fundo: #f1f5f9;
+    --cor-cartao: #ffffff;
+    --cor-texto: #1e293b;
+    --cor-texto-suave: #64748b;
+    --cor-borda: #e2e8f0;
+    --sombra: 0 10px 30px rgba(0, 0, 0, 0.08);
+    --raio-borda: 16px;
+    --fonte-principal: 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
+}
+
+/* 1.2 Reset básico de estilos */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 1.3 Estilo base do corpo da página */
+body {
+    font-family: var(--fonte-principal);
+    background: linear-gradient(135deg, var(--cor-gradiente-1), var(--cor-gradiente-2));
+    color: var(--cor-texto);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px;
+}
+
+/* --------------------------------------------------------------------------
+   Fim sub-bloco 1.3 Estilo base do corpo da página
+   -------------------------------------------------------------------------- */
+/* Fim bloco 1 VARIÁVEIS E RESET GLOBAL
+   ========================================================================== */
+
+
+/* ==========================================================================
+   BLOCO 2 - CABEÇALHO
+   ========================================================================== */
+
+/* 2.1 Topo da página */
+.topo {
+    text-align: center;
+    color: #ffffff;
+    margin-bottom: 28px;
+}
+
+/* 2.2 Título principal */
+.topo__titulo {
+    font-size: 2.4rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* 2.3 Subtítulo */
+.topo__subtitulo {
+    font-size: 1.05rem;
+    opacity: 0.92;
+    margin-top: 6px;
+    font-weight: 400;
+}
+
+/* --------------------------------------------------------------------------
+   Fim sub-bloco 2.3 Subtítulo
+   -------------------------------------------------------------------------- */
+/* Fim bloco 2 CABEÇALHO
+   ========================================================================== */
+
+
+/* ==========================================================================
+   BLOCO 3 - CONTEÚDO PRINCIPAL
+   ========================================================================== */
+
+/* 3.1 Contêiner central do conteúdo */
+.principal {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex: 1;
+}
+
+/* 3.2 Cartões (seções) */
+.cartao {
+    background: var(--cor-cartao);
+    border-radius: var(--raio-borda);
+    box-shadow: var(--sombra);
+    padding: 24px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cartao:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.12);
+}
+
+/* 3.3 Títulos dos cartões */
+.cartao__titulo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--cor-primaria);
+    margin-bottom: 8px;
+}
+
+/* 3.4 Texto descritivo dos cartões */
+.cartao__texto {
+    color: var(--cor-texto-suave);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+
+/* 3.5 Indicador de status (gravação e transcrição) */
+.status {
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    color: var(--cor-primaria-escura);
+    border-radius: 10px;
+    padding: 12px 16px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 14px;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* 3.6 Estado de gravação ativa */
+.status--gravando {
+    background: #fee2e2;
+    border-color: #fecaca;
+    color: var(--cor-perigo-escura);
+    animation: pulsar 1.2s infinite;
+}
+
+/* 3.7 Estado de processamento (transcrevendo) */
+.status--transcrevendo {
+    background: #fef3c7;
+    border-color: #fde68a;
+    color: #92400e;
+}
+
+/* 3.8 Estado de sucesso */
+.status--sucesso {
+    background: #d1fae5;
+    border-color: #a7f3d0;
+    color: #065f46;
+}
+
+/* 3.9 Animação de pulsação (usada no status de gravação) */
+@keyframes pulsar {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* 3.10 Cronômetro */
+.cronometro {
+    text-align: center;
+    font-size: 3rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--cor-texto);
+    margin-bottom: 16px;
+    letter-spacing: 2px;
+}
+
+/* 3.11 Contêiner dos botões */
+.botoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+/* 3.12 Botão base */
+.botao {
+    border: none;
+    border-radius: 12px;
+    padding: 12px 22px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: var(--fonte-principal);
+    cursor: pointer;
+    color: #ffffff;
+    transition: background 0.25s ease, transform 0.1s ease, opacity 0.25s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.botao:active:not(:disabled) {
+    transform: scale(0.96);
+}
+
+.botao:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* 3.13 Variações de cor dos botões */
+.botao--gravar { background: var(--cor-perigo); }
+.botao--gravar:hover:not(:disabled) { background: var(--cor-perigo-escura); }
+
+.botao--parar { background: var(--cor-primaria); }
+.botao--parar:hover:not(:disabled) { background: var(--cor-primaria-escura); }
+
+.botao--apagar { background: #64748b; }
+.botao--apagar:hover:not(:disabled) { background: #475569; }
+
+.botao--transcrever { background: var(--cor-sucesso); }
+.botao--transcrever:hover:not(:disabled) { background: var(--cor-sucesso-escura); }
+
+.botao--copiar { background: #0ea5e9; }
+.botao--copiar:hover:not(:disabled) { background: #0284c7; }
+
+.botao--salvar { background: var(--cor-primaria); }
+.botao--salvar:hover:not(:disabled) { background: var(--cor-primaria-escura); }
+
+.botao--atualizar { background: #f59e0b; }
+.botao--atualizar:hover:not(:disabled) { background: #d97706; }
+
+/* 3.14 Player de áudio */
+.player {
+    margin-top: 6px;
+    text-align: center;
+}
+
+.player audio {
+    width: 100%;
+    border-radius: 12px;
+}
+
+/* 3.15 Campo (rótulo + select) */
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.campo__rotulo {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--cor-texto);
+}
+
+.campo__select {
+    padding: 12px 14px;
+    border: 2px solid var(--cor-borda);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-family: var(--fonte-principal);
+    background: #f8fafc;
+    color: var(--cor-texto);
+    cursor: pointer;
+    transition: border-color 0.25s ease;
+}
+
+.campo__select:focus {
+    outline: none;
+    border-color: var(--cor-primaria);
+}
+
+/* 3.15.1 Campo de upload de arquivo de áudio */
+.campo--upload {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 14px;
+    margin-bottom: 0;
+    padding: 12px;
+    background: #f8fafc;
+    border: 2px dashed var(--cor-borda);
+    border-radius: 12px;
+}
+
+.botao--arquivo {
+    display: inline-block;
+    background: #0ea5e9;
+    font-size: 0.9rem;
+    padding: 10px 18px;
+    cursor: pointer;
+    margin: 0;
+}
+
+.botao--arquivo:hover { background: #0284c7; }
+
+.campo__ajuda {
+    font-size: 0.8rem;
+    color: var(--cor-texto-suave);
+    text-align: center;
+}
+
+/* 3.16 Área de resultado (textarea da transcrição) */
+.resultado {
+    width: 100%;
+    border: 2px solid var(--cor-borda);
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 1rem;
+    line-height: 1.7;
+    font-family: var(--fonte-principal);
+    resize: vertical;
+    min-height: 160px;
+    background: #f8fafc;
+    color: var(--cor-texto);
+    margin-bottom: 12px;
+    transition: border-color 0.25s ease;
+}
+
+.resultado:focus {
+    outline: none;
+    border-color: var(--cor-sucesso);
+}
+
+/* 3.17 Lista do histórico de transcrições */
+.lista {
+    list-style: none;
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.lista__item {
+    background: #f8fafc;
+    border: 1px solid var(--cor-borda);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
+}
+
+.lista__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.lista__nome {
+    font-weight: 700;
+    color: var(--cor-texto);
+    word-break: break-all;
+}
+
+.lista__meta {
+    color: var(--cor-texto-suave);
+    font-size: 0.8rem;
+}
+
+.lista__acoes {
+    display: flex;
+    gap: 8px;
+}
+
+.lista__acoes .botao {
+    padding: 8px 14px;
+    font-size: 0.8rem;
+}
+
+/* 3.18 Aviso quando não há transcrições */
+.aviso {
+    color: var(--cor-texto-suave);
+    text-align: center;
+    font-style: italic;
+    margin-top: 12px;
+    font-size: 0.9rem;
+}
+
+/* 3.19 Mensagem de feedback (sucesso/erro) */
+.mensagem {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-weight: 600;
+    text-align: center;
+    font-size: 0.95rem;
+}
+
+.mensagem--sucesso {
+    background: #d1fae5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+}
+
+.mensagem--erro {
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+/* --------------------------------------------------------------------------
+   Fim sub-bloco 3.19 Mensagem de feedback (sucesso/erro)
+   -------------------------------------------------------------------------- */
+/* Fim bloco 3 CONTEÚDO PRINCIPAL
+   ========================================================================== */
+
+
+/* ==========================================================================
+   BLOCO 4 - RODAPÉ
+   ========================================================================== */
+
+/* 4.1 Rodapé */
+.rodape {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.85rem;
+    margin-top: 28px;
+    padding-top: 16px;
+}
+
+/* --------------------------------------------------------------------------
+   Fim sub-bloco 4.1 Rodapé
+   -------------------------------------------------------------------------- */
+/* Fim bloco 4 RODAPÉ
+   ========================================================================== */
+
+
+/* ==========================================================================
+   BLOCO 5 - RESPONSIVIDADE (MOBILE-FIRST)
+   ========================================================================== */
+
+/* 5.1 Ajustes para telas pequenas */
+@media (max-width: 480px) {
+    body { padding: 16px 10px; }
+    .topo__titulo { font-size: 1.7rem; }
+    .cronometro { font-size: 2.4rem; }
+    .cartao { padding: 18px; }
+    .botoes { flex-direction: column; }
+    .botoes .botao { width: 100%; }
+}
+
+/* --------------------------------------------------------------------------
+   Fim sub-bloco 5.1 Ajustes para telas pequenas
+   -------------------------------------------------------------------------- */
+/* Fim bloco 5 RESPONSIVIDADE (MOBILE-FIRST)
+   ========================================================================== */
+
+
+/* ==========================================================================
+   ÍNDICE
+   ==========================================================================
+   1 VARIÁVEIS E RESET GLOBAL
+     1.1 Variáveis de cores, fontes e espaçamentos
+     1.2 Reset básico de estilos
+     1.3 Estilo base do corpo da página
+   2 CABEÇALHO
+     2.1 Topo da página
+     2.2 Título principal
+     2.3 Subtítulo
+   3 CONTEÚDO PRINCIPAL
+     3.1 Contêiner central do conteúdo
+     3.2 Cartões (seções)
+     3.3 Títulos dos cartões
+     3.4 Texto descritivo dos cartões
+     3.5 Indicador de status (gravação e transcrição)
+     3.6 Estado de gravação ativa
+     3.7 Estado de processamento (transcrevendo)
+     3.8 Estado de sucesso
+     3.9 Animação de pulsação
+     3.10 Cronômetro
+     3.11 Contêiner dos botões
+     3.12 Botão base
+     3.13 Variações de cor dos botões
+     3.14 Player de áudio
+     3.15 Campo (rótulo + select)
+     3.16 Área de resultado (textarea da transcrição)
+     3.17 Lista do histórico de transcrições
+     3.18 Aviso quando não há transcrições
+     3.19 Mensagem de feedback (sucesso/erro)
+   4 RODAPÉ
+     4.1 Rodapé
+   5 RESPONSIVIDADE (MOBILE-FIRST)
+     5.1 Ajustes para telas pequenas
+   ========================================================================== */

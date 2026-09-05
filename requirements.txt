@@ -1,0 +1,6 @@
+# =============================================================================
+# requirements.txt (raiz) — atalho para o requirements do backend.
+# Algumas plataformas (ex.: Railway, alguns buildpacks) esperam este arquivo
+# na RAIZ do repositório. O pip resolve o include automaticamente.
+# =============================================================================
+-r backend/requirements.txt
