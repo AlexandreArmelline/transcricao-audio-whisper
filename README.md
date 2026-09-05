@@ -3,9 +3,10 @@ title: Transcrição de Áudio com Whisper IA
 emoji: 🎙️
 colorFrom: indigo
 colorTo: purple
-sdk: docker
+sdk: gradio
+sdk_version: "4.44.1"
+app_file: app.py
 pinned: false
-app_port: 7860
 ---
 
 # 🎙️ Sistema Web de Gravação e Transcrição de Áudio (Whisper IA)
@@ -14,7 +15,7 @@ Sistema web que **grava áudio pelo microfone** (desktop ou celular) e **transcr
 com a **IA Whisper** (OpenAI) rodando **no próprio servidor** — sem depender do navegador, sem limite
 de duração e com alta precisão.
 
-![Fluxo](https://img.shields.io/badge/Flask-3.x-000000) ![IA](https://img.shields.io/badge/Whisper-faster--whisper-10b981)
+![Fluxo](https://img.shields.io/badge/Gradio-4.x-000000) ![IA](https://img.shields.io/badge/Whisper-faster--whisper-10b981)
 
 ---
 
@@ -52,18 +53,19 @@ O sistema **mede a memória RAM disponível** e escolhe o **mais preciso que cou
 ## 📁 Estrutura
 
 ```
+├── app.py                      → Interface Gradio (HF Spaces) — reutiliza a IA Whisper do backend
 ├── backend/
 │   ├── app.py                  → Aplicação Flask (rotas + IA Whisper)
 │   ├── requirements.txt        → Dependências Python
 │   ├── pre_download_modelo.py  → Baixa o modelo no build (evita demora na 1ª transcrição)
-│   ├── templates/index.html    → Página principal
-│   ├── static/                 → CSS e JavaScript
+│   ├── templates/index.html    → Página principal (usada pela versão Flask)
+│   ├── static/                 → CSS e JavaScript (usados pela versão Flask)
 │   ├── uploads/                → Áudios enviados (gerado em runtime)
 │   └── models/                 → Cache do modelo Whisper (gerado, persistente)
 ├── transcricoes/               → Transcrições .txt salvas (gerado em runtime)
 ├── Procfile                    → Comando de start (Render/Railway/Fly)
 ├── runtime.txt                 → Versão do Python
-├── requirements.txt            → (raiz) aponta para o backend, se necessário
+├── requirements.txt            → (raiz) inclui Gradio + dependências do backend
 └── README.md
 ```
 
@@ -79,6 +81,10 @@ O **Hugging Face Spaces** é a melhor opção gratuita para máxima precisão: o
 então o `large-v3` (o modelo mais preciso do Whisper) roda de verdade. Perfeito para demonstrações,
 uso pessoal ou profissional leve.
 
+> ℹ️ Este projeto está configurado para o **SDK Gradio** (gratuito no HF Spaces — o SDK Docker
+> exige plano pago). O arquivo `app.py` na raiz é a interface Gradio, que reutiliza a mesma
+> IA Whisper do `backend/app.py`.
+
 ### Passo a passo
 
 1. **Crie uma conta grátis** em [huggingface.co](https://huggingface.co/join);
@@ -86,17 +92,17 @@ uso pessoal ou profissional leve.
 3. Configure:
    - **Space name:** `transcricao-audio-whisper`;
    - **License:** MIT;
-   - **SDK:** **Docker** (importante! O projeto usa o Dockerfile com porta 7860);
-   - **Hardware:** CPU basic · 2 vCPU · 16 GB RAM · Free (grátis) — se aparecer, escolha
-     *CPU upgrade* → 16 GB (no plano free fica disponível após criar com o hardware básico);
+   - **SDK:** **Gradio** (não usar Docker — exige plano pago no HF Spaces);
+   - **Hardware:** CPU basic · 2 vCPU · 16 GB RAM · Free (grátis);
    - Clique em **Create Space**;
 4. **Envie o código** (no terminal, na pasta do projeto):
    ```bash
    git remote add space https://huggingface.co/spaces/SEU_USUARIO/transcricao-audio-whisper
    git push space main
    ```
-5. O HF Spaces **detecta o `Dockerfile`** e faz o build (demora alguns minutos — baixa o modelo
-   `large-v3` de ~3 GB durante o build);
+5. O HF Spaces **detecta o Gradio** (metadata do README) e instala as dependências do
+   `requirements.txt` automaticamente. A **primeira transcrição** baixa o modelo `large-v3`
+   (~3 GB) e pode levar alguns minutos — depois disso fica em cache;
 6. Pronto! 🎉 Acesse `https://SEU_USUARIO-transcricao-audio-whisper.hf.space`
 
 > ⚠️ **Atenção às pastas no HF Spaces:** o disco é **efêmero** em hardware free — a cada

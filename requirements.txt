@@ -1,6 +1,11 @@
 # =============================================================================
-# requirements.txt (raiz) — atalho para o requirements do backend.
-# Algumas plataformas (ex.: Railway, alguns buildpacks) esperam este arquivo
-# na RAIZ do repositório. O pip resolve o include automaticamente.
+# requirements.txt (raiz) — usado pelo Hugging Face Spaces (SDK Gradio) e por
+# plataformas que esperam as dependências na raiz do repositório.
+#
+# O backend/requirements.txt já traz: Flask, faster-whisper, psutil, gunicorn.
+# Aqui adicionamos o Gradio (interface web do HF Spaces) ao conjunto.
 # =============================================================================
 -r backend/requirements.txt
+
+# Interface web (SDK Gradio no Hugging Face Spaces - plano gratuito)
+gradio>=4.44.0

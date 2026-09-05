@@ -282,6 +282,42 @@ def transcrever_com_whisper(caminho_audio, codigo_idioma):
 # -----------------------------------------------------------------------------
 # Fim sub-bloco 2.4 Transcreve um arquivo de áudio com a IA Whisper
 # -----------------------------------------------------------------------------
+
+# 2.5 Pré-carrega o modelo Whisper em memória (usado no startup do app Gradio)
+def preaquecer_modelo():
+    """Carrega o modelo Whisper em memória sem transcrever nada.
+
+    Útil no Hugging Face Spaces: no primeiro acesso (após hibernação) o modelo
+    de ~3 GB precisa ser baixado + carregado. Ao chamar isto em background no
+    startup, o usuário não precisa esperar o download na primeira transcrição.
+    """
+    global _MODELO_CARREGADO
+    try:
+        from faster_whisper import WhisperModel
+    except ImportError:
+        return False
+
+    with _LOCK_WHISPER:
+        if _MODELO_CARREGADO is None:
+            print(
+                f'[preaquecimento] Baixando/carregando modelo '
+                f'"{MODELO_ATIVO}" ({COMPUTE_TYPE_ATIVO}) em background...',
+                flush=True,
+            )
+            _MODELO_CARREGADO = WhisperModel(
+                MODELO_ATIVO,
+                device='cpu',
+                compute_type=COMPUTE_TYPE_ATIVO,
+                cpu_threads=0,
+                num_workers=1,
+                download_root=MODELOS_FOLDER,
+            )
+            print('[preaquecimento] Modelo pronto em memória!', flush=True)
+        return _MODELO_CARREGADO is not None
+
+# -----------------------------------------------------------------------------
+# Fim sub-bloco 2.5 Pré-carrega o modelo Whisper em memória
+# -----------------------------------------------------------------------------
 # Fim bloco 2 FUNÇÕES AUXILIARES
 # =============================================================================
 
@@ -501,6 +537,7 @@ if __name__ == '__main__':
 #   2.2 Função que cria um nome de arquivo único
 #   2.3 Função para gerar o nome do arquivo de transcrição (texto)
 #   2.4 Transcreve um arquivo de áudio com a IA Whisper (faster-whisper)
+#   2.5 Pré-carrega o modelo Whisper em memória
 # 3 ROTAS DA APLICAÇÃO
 #   3.1 Rota principal: renderiza a página
 #   3.2 Rota de verificação de saúde (health check)
