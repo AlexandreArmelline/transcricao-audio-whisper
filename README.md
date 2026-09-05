@@ -1,3 +1,13 @@
+---
+title: Transcrição de Áudio com Whisper IA
+emoji: 🎙️
+colorFrom: indigo
+colorTo: purple
+sdk: docker
+pinned: false
+app_port: 7860
+---
+
 # 🎙️ Sistema Web de Gravação e Transcrição de Áudio (Whisper IA)
 
 Sistema web que **grava áudio pelo microfone** (desktop ou celular) e **transcreve automaticamente**
@@ -60,6 +70,39 @@ O sistema **mede a memória RAM disponível** e escolhe o **mais preciso que cou
 > ⚠️ As pastas `backend/uploads/`, `backend/models/` e `transcricoes/` são **geradas em runtime**
 > e estão no `.gitignore`. Se quiser manter o histórico de transcrições entre deploys, configure
 > um **volume persistente** apontando para elas (ver variáveis abaixo).
+
+---
+
+## 🚀 Deploy — Hugging Face Spaces (⭐ recomendado grátis — 2 vCPU + 16 GB RAM)
+
+O **Hugging Face Spaces** é a melhor opção gratuita para máxima precisão: oferece **16 GB de RAM**,
+então o `large-v3` (o modelo mais preciso do Whisper) roda de verdade. Perfeito para demonstrações,
+uso pessoal ou profissional leve.
+
+### Passo a passo
+
+1. **Crie uma conta grátis** em [huggingface.co](https://huggingface.co/join);
+2. Clique no seu **avatar → New Space** (ou acesse [huggingface.co/new-space](https://huggingface.co/new-space));
+3. Configure:
+   - **Space name:** `transcricao-audio-whisper`;
+   - **License:** MIT;
+   - **SDK:** **Docker** (importante! O projeto usa o Dockerfile com porta 7860);
+   - **Hardware:** CPU basic · 2 vCPU · 16 GB RAM · Free (grátis) — se aparecer, escolha
+     *CPU upgrade* → 16 GB (no plano free fica disponível após criar com o hardware básico);
+   - Clique em **Create Space**;
+4. **Envie o código** (no terminal, na pasta do projeto):
+   ```bash
+   git remote add space https://huggingface.co/spaces/SEU_USUARIO/transcricao-audio-whisper
+   git push space main
+   ```
+5. O HF Spaces **detecta o `Dockerfile`** e faz o build (demora alguns minutos — baixa o modelo
+   `large-v3` de ~3 GB durante o build);
+6. Pronto! 🎉 Acesse `https://SEU_USUARIO-transcricao-audio-whisper.hf.space`
+
+> ⚠️ **Atenção às pastas no HF Spaces:** o disco é **efêmero** em hardware free — a cada
+> reinício (após ~48h sem uso), o modelo é re-baixado (~3 GB) e transcrições anteriores somem.
+> Para persistência em produção, use um Space **pago** (que mantém o disco) ou configure
+> um *Persistent Storage* nas configurações do Space.
 
 ---
 
