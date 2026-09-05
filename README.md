@@ -54,6 +54,7 @@ O sistema **mede a memória RAM disponível** e escolhe o **mais preciso que cou
 
 ```
 ├── app.py                      → Interface Gradio (HF Spaces) — reutiliza a IA Whisper do backend
+├── transcricao_zerogpu.py      → Núcleo de transcrição na GPU (ZeroGPU do HF Spaces)
 ├── backend/
 │   ├── app.py                  → Aplicação Flask (rotas + IA Whisper)
 │   ├── requirements.txt        → Dependências Python
@@ -75,11 +76,12 @@ O sistema **mede a memória RAM disponível** e escolhe o **mais preciso que cou
 
 ---
 
-## 🚀 Deploy — Hugging Face Spaces (⭐ recomendado grátis — 2 vCPU + 16 GB RAM)
+## 🚀 Deploy — Hugging Face Spaces (⭐ recomendado grátis — ZeroGPU com GPU NVIDIA)
 
-O **Hugging Face Spaces** é a melhor opção gratuita para máxima precisão: oferece **16 GB de RAM**,
-então o `large-v3` (o modelo mais preciso do Whisper) roda de verdade. Perfeito para demonstrações,
-uso pessoal ou profissional leve.
+O **Hugging Face Spaces** é a melhor opção gratuita para máxima precisão e velocidade: o hardware
+**ZeroGPU** dá acesso a uma **GPU NVIDIA (A100)** por requisição, então o `large-v3` (o modelo mais
+preciso do Whisper) roda em **float16 na GPU** — muito mais rápido que CPU. Perfeito para
+demonstrações, uso pessoal ou profissional leve.
 
 > ℹ️ Este projeto está configurado para o **SDK Gradio** (gratuito no HF Spaces — o SDK Docker
 > exige plano pago). O arquivo `app.py` na raiz é a interface Gradio, que reutiliza a mesma
@@ -93,7 +95,7 @@ uso pessoal ou profissional leve.
    - **Space name:** `transcricao-audio-whisper`;
    - **License:** MIT;
    - **SDK:** **Gradio** (não usar Docker — exige plano pago no HF Spaces);
-   - **Hardware:** CPU basic · 2 vCPU · 16 GB RAM · Free (grátis);
+   - **Hardware:** **ZeroGPU** · Free (grátis — GPU NVIDIA A100);
    - Clique em **Create Space**;
 4. **Envie o código** (no terminal, na pasta do projeto):
    ```bash
@@ -102,8 +104,12 @@ uso pessoal ou profissional leve.
    ```
 5. O HF Spaces **detecta o Gradio** (metadata do README) e instala as dependências do
    `requirements.txt` automaticamente. A **primeira transcrição** baixa o modelo `large-v3`
-   (~3 GB) e pode levar alguns minutos — depois disso fica em cache;
+   (~3 GB) e pode levar alguns minutos — depois disso fica em cache no worker da GPU;
 6. Pronto! 🎉 Acesse `https://SEU_USUARIO-transcricao-audio-whisper.hf.space`
+
+> 💡 **ZeroGPU:** o código detecta automaticamente o ambiente. No ZeroGPU usa `large-v3`
+> com `float16` na GPU (máxima velocidade). Em CPU (local/Render) usa a seleção automática
+> por RAM, sem nenhuma mudança manual.
 
 > ⚠️ **Atenção às pastas no HF Spaces:** o disco é **efêmero** em hardware free — a cada
 > reinício (após ~48h sem uso), o modelo é re-baixado (~3 GB) e transcrições anteriores somem.
@@ -158,6 +164,7 @@ Adicione um volume para `backend/models` e `transcricoes` se quiser persistênci
 | Variável | Padrão | Descrição |
 |---|---|---|
 | `WHISPER_MODEL` | `auto` | Fixa o modelo: `tiny`, `base`, `small`, `medium`, `large-v3` ou `auto` |
+| `WHISPER_MODEL_ZEROGPU` | `large-v3` | Modelo usado no HF Spaces ZeroGPU (GPU) |
 | `WHISPER_COMPUTE_TYPE` | auto | `int8_float32` (leve) ou `float32` (máxima precisão) |
 | `PASTA_UPLOADS` | `backend/uploads` | Onde ficam os áudios enviados |
 | `PASTA_TRANSCRICOES` | `transcricoes` | Onde ficam os `.txt` salvos |

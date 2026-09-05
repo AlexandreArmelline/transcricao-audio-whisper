@@ -9,3 +9,8 @@
 
 # Interface web (SDK Gradio no Hugging Face Spaces - plano gratuito)
 gradio>=4.44.0
+
+# Decorator oficial do Hugging Face Spaces ZeroGPU (GPU NVIDIA gratuita).
+# Necessário apenas no HF Spaces; o código já trata a ausência dele nos
+# demais ambientes (vira um decorator neutro, sem efeito).
+spaces>=0.30.0

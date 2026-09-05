@@ -177,6 +177,49 @@ app.logger.info(
 )
 
 # -----------------------------------------------------------------------------
+# Fim sub-bloco 1.4.2 Decide o modelo e o tipo de precisão mais adequados
+# -----------------------------------------------------------------------------
+
+# 1.4.3 Suporte ao Hugging Face Spaces ZeroGPU (GPU NVIDIA grátis)
+# -----------------------------------------------------------------------------
+# O ZeroGPU é o hardware gratuito dos Spaces novos. Ele fornece acesso a uma
+# GPU NVIDIA (A100) por requisição — perfeito para o Whisper (muito mais
+# rápido que CPU). Para usá-lo, decoramos a função pesada com @spaces.GPU e
+# carregamos o modelo com device='cuda' e compute_type='float16'.
+
+# Detecta se estamos rodando dentro de um Space do Hugging Face
+def em_ambiente_hf_spaces():
+    """True quando o código roda em um Hugging Face Space (ZeroGPU)."""
+    return any(
+        chave in os.environ
+        for chave in ('SPACE_ID', 'SPACE_HOST', 'HF_SPACE', 'SPACES_GPU')
+    )
+
+
+# Tenta importar o decorator oficial do ZeroGPU (pacote `spaces`).
+# - No HF Spaces ZeroGPU: vira o decorator real (aloca GPU para a função).
+# - Em qualquer outro ambiente (local, Render, Railway...): vira um decorator
+#   neutro que apenas repassa a função — nada muda no comportamento.
+try:
+    from spaces import GPU as _decorator_gpu  # type: ignore
+
+    _ZEROGPU_DISPONIVEL = True
+except Exception:  # noqa: BLE001 — pacote opcional ausente
+    _ZEROGPU_DISPONIVEL = False
+
+    def _decorator_gpu(funcao):
+        """Decorator neutro quando o pacote `spaces` não está instalado."""
+        return funcao
+
+# Flag usada pelo app Gradio: True => transcrição deve usar a GPU (ZeroGPU).
+USAR_ZEROGPU = _ZEROGPU_DISPONIVEL and em_ambiente_hf_spaces()
+app.logger.info('ZeroGPU (Hugging Face): %s', 'ATIVO' if USAR_ZEROGPU else 'inativo')
+
+# -----------------------------------------------------------------------------
+# Fim sub-bloco 1.4.3 Suporte ao Hugging Face Spaces ZeroGPU
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
 # Fim sub-bloco 1.4 Configuração da transcrição com IA (Whisper)
 # -----------------------------------------------------------------------------
 # Fim bloco 1 IMPORTAÇÕES E CONFIGURAÇÃO DA APLICAÇÃO
@@ -245,14 +288,25 @@ def transcrever_com_whisper(caminho_audio, codigo_idioma):
                 'Isso acontece apenas uma vez.',
                 MODELO_ATIVO, COMPUTE_TYPE_ATIVO,
             )
-            _MODELO_CARREGADO = WhisperModel(
-                MODELO_ATIVO,
-                device='cpu',
-                compute_type=COMPUTE_TYPE_ATIVO,
-                cpu_threads=0,      # usa todos os núcleos do processador
-                num_workers=1,      # uma transcrição por vez (estável)
-                download_root=MODELOS_FOLDER,  # cache persistente (ou padrão)
-            )
+            if USAR_ZEROGPU:
+                # No ZeroGPU: roda na GPU NVIDIA (A100) com float16
+                # (precisão máxima suportada em GPU e muito mais rápido).
+                _MODELO_CARREGADO = WhisperModel(
+                    MODELO_ATIVO,
+                    device='cuda',
+                    compute_type='float16',
+                    download_root=MODELOS_FOLDER,
+                )
+            else:
+                # Em CPU: usa o compute_type escolhido pela RAM disponível
+                _MODELO_CARREGADO = WhisperModel(
+                    MODELO_ATIVO,
+                    device='cpu',
+                    compute_type=COMPUTE_TYPE_ATIVO,
+                    cpu_threads=0,      # usa todos os núcleos do processador
+                    num_workers=1,      # uma transcrição por vez (estável)
+                    download_root=MODELOS_FOLDER,  # cache persistente (ou padrão)
+                )
             app.logger.info('Modelo Whisper carregado com sucesso.')
 
         # 2.4.4 Executa a transcrição com os parâmetros de MAIOR precisão
@@ -301,17 +355,25 @@ def preaquecer_modelo():
         if _MODELO_CARREGADO is None:
             print(
                 f'[preaquecimento] Baixando/carregando modelo '
-                f'"{MODELO_ATIVO}" ({COMPUTE_TYPE_ATIVO}) em background...',
+                f'"{MODELO_ATIVO}" em background...',
                 flush=True,
             )
-            _MODELO_CARREGADO = WhisperModel(
-                MODELO_ATIVO,
-                device='cpu',
-                compute_type=COMPUTE_TYPE_ATIVO,
-                cpu_threads=0,
-                num_workers=1,
-                download_root=MODELOS_FOLDER,
-            )
+            if USAR_ZEROGPU:
+                _MODELO_CARREGADO = WhisperModel(
+                    MODELO_ATIVO,
+                    device='cuda',
+                    compute_type='float16',
+                    download_root=MODELOS_FOLDER,
+                )
+            else:
+                _MODELO_CARREGADO = WhisperModel(
+                    MODELO_ATIVO,
+                    device='cpu',
+                    compute_type=COMPUTE_TYPE_ATIVO,
+                    cpu_threads=0,
+                    num_workers=1,
+                    download_root=MODELOS_FOLDER,
+                )
             print('[preaquecimento] Modelo pronto em memória!', flush=True)
         return _MODELO_CARREGADO is not None
 

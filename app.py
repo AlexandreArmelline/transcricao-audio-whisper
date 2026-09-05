@@ -30,11 +30,25 @@ from app import (  # noqa: E402
     preaquecer_modelo,
     MODELO_ATIVO,
     COMPUTE_TYPE_ATIVO,
+    USAR_ZEROGPU,
 )
 
 # 1.4 Importa o Gradio (interface web)
 # -----------------------------------------------------------------------------
 import gradio as gr  # noqa: E402
+
+# 1.5 Decorator oficial do Hugging Face Spaces ZeroGPU
+# -----------------------------------------------------------------------------
+# Quando rodamos no ZeroGPU, a função que usa a GPU precisa ser decorada com
+# @spaces.GPU. A GPU é alocada SOMENTE enquanto essa função executa — por isso
+# o modelo deve ser carregado dentro da própria função (ou num helper chamado
+# por ela), nunca no módulo. Nos demais ambientes usamos um decorator neutro.
+if USAR_ZEROGPU:
+    from spaces import GPU  # noqa: E402
+else:
+    def GPU(funcao):  # noqa: N802 — nome compatível com o pacote oficial
+        """Decorator neutro quando não estamos no ZeroGPU."""
+        return funcao
 
 # 1.5 Pasta onde as transcrições .txt serão salvas
 # -----------------------------------------------------------------------------
@@ -69,6 +83,7 @@ IDIOMAS_UI = {
 
 # 2.1 Função chamada quando o usuário clica em "Transcrever"
 # -----------------------------------------------------------------------------
+@GPU  # noqa: E305 — no ZeroGPU aloca a GPU NVIDIA só durante a execução
 def transcrever_audio(arquivo_audio, idioma_ui):
     """Recebe o áudio (upload ou microfone) e devolve o texto transcrito.
 
@@ -91,7 +106,18 @@ def transcrever_audio(arquivo_audio, idioma_ui):
     # 2.1.3 Executa a transcrição com Whisper (mede o tempo gasto)
     inicio = time.time()
     try:
-        texto = transcrever_com_whisper(arquivo_audio, codigo_idioma)
+        if USAR_ZEROGPU:
+            # Ambiente ZeroGPU (HF Spaces com GPU NVIDIA): a transcrição roda
+            # no módulo dedicado transcricao_zerogpu.py, onde a função é
+            # decorada com @spaces.GPU (a GPU é alocada só durante a chamada).
+            # O modelo large-v3 roda em float16 na GPU — MUITO mais rápido.
+            from transcricao_zerogpu import transcrever_no_gpu
+
+            texto = transcrever_no_gpu(arquivo_audio, codigo_idioma)
+        else:
+            # Ambiente normal (CPU): usa a lógica original do backend Flask,
+            # que escolhe o melhor modelo conforme a RAM disponível.
+            texto = transcrever_com_whisper(arquivo_audio, codigo_idioma)
     except Exception as erro:  # noqa: BLE001 — qualquer erro vira mensagem amigável
         raise gr.Error(f'❌ Falha ao transcrever: {erro}')
     duracao = round(time.time() - inicio, 1)
@@ -106,9 +132,15 @@ def transcrever_audio(arquivo_audio, idioma_ui):
         arquivo.write(texto)
 
     # 2.1.5 Monta a mensagem de status com o modelo usado
+    if USAR_ZEROGPU:
+        modelo_usado = 'large-v3 (GPU ZeroGPU)'
+        compute_usado = 'float16'
+    else:
+        modelo_usado = MODELO_ATIVO
+        compute_usado = COMPUTE_TYPE_ATIVO
     status = (
         f'✅ Transcrição concluída em **{duracao} s** '
-        f'(modelo `{MODELO_ATIVO}` · `{COMPUTE_TYPE_ATIVO}`).'
+        f'(modelo `{modelo_usado}` · `{compute_usado}`).'
     )
 
     return texto, caminho_txt, status
@@ -188,9 +220,9 @@ with gr.Blocks(
             '- ⏳ **Primeira transcrição:** o modelo Whisper (cerca de 2–3 GB) '
             'é baixado automaticamente na primeira vez — pode levar alguns '
             'minutos. Depois fica salvo em cache e fica rápido.\n'
-            '- 🧠 **Precisão máxima:** no plano gratuito do HF Spaces (16 GB de '
-            'RAM) o sistema usa automaticamente o modelo **large-v3**, o mais '
-            'preciso da OpenAI.\n'
+            '- 🧠 **Precisão máxima:** no Hugging Face Spaces com ZeroGPU o '
+            'sistema usa o modelo **large-v3** rodando em **GPU NVIDIA** — o '
+            'mais preciso da OpenAI e com transcrição muito rápida.\n'
             '- 📱 Funciona em celulares e computadores.\n'
             '- 🛡️ Seu áudio é processado **neste servidor** — nada é enviado '
             'para APIs externas.'
@@ -219,7 +251,14 @@ if __name__ == '__main__':
     # O HF Spaces grátis hiberna após ~48h sem uso. Quando alguém acessa, o
     # container sobe e este thread já começa a baixar/carregar o modelo
     # (large-v3 ~3 GB na primeira vez). Assim a primeira transcrição é rápida.
-    threading.Thread(target=preaquecer_modelo, daemon=True).start()
+    #
+    # IMPORTANTE (ZeroGPU): no Hugging Face com ZeroGPU não devemos carregar o
+    # modelo em CPU no startup — a GPU é alocada por chamada e o carregamento
+    # acontece dentro da função @spaces.GPU (1ª transcrição). O preaquecimento
+    # abaixo usa a função de CPU (útil em hardware CPU common); no ZeroGPU a
+    # própria @spaces.GPU já cuida do cache entre chamadas.
+    if not USAR_ZEROGPU:
+        threading.Thread(target=preaquecer_modelo, daemon=True).start()
 
     # 4.1.2 Sobe o servidor Gradio
     demo.queue().launch(
