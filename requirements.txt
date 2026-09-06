@@ -38,11 +38,29 @@ gradio>=4.44.0
 spaces>=0.30.0
 
 # -----------------------------------------------------------------------------
-# OBSERVAÇÕES:
+# 3. CORREÇÃO DE COMPATIBILIDADE (Hugging Face Spaces / ZeroGPU)
+# -----------------------------------------------------------------------------
+
+# PROBLEMA: o template do HF Spaces instala automaticamente "huggingface-hub"
+# na versão mais recente (hoje 1.x). Essa versão REMOVEU o módulo HfFolder,
+# que o Gradio 4.44.1 ainda importa internamente em gradio/oauth.py:
+#   ImportError: cannot import name 'HfFolder' from 'huggingface_hub'
+# → o app falha ao iniciar (Runtime Error).
+
+# SOLUÇÃO: fixar huggingface-hub na última versão da série 0.x (0.29.3),
+# que AINDA contém o módulo HfFolder. O pip resolve a restrição mais
+# específica e instala esta versão mesmo que o HF tenha pedido >=0.30.
+huggingface-hub==0.29.3
+
+# OBSERVAÇÃO: se um dia o Gradio for atualizado para uma versão que use
+# o novo huggingface-hub (>=1.0), esta linha pode ser removida/ajustada.
+
+# -----------------------------------------------------------------------------
+# OBSERVAÇÕES GERAIS:
 # 1. faster-whisper baixa automaticamente o modelo Whisper escolhido na
 #    PRIMEIRA transcrição (precisa de internet nesse momento).
 # 2. O build do HF Spaces já adiciona automaticamente: torch, datasets,
-#    huggingface-hub, uvicorn e websockets (versões fixadas por eles).
+#    uvicorn e websockets (versões fixadas por eles).
 # 3. Em plataformas Windows locais, use waitress no lugar do gunicorn
 #    (gunicorn só funciona em Linux/macOS).
 # =============================================================================
