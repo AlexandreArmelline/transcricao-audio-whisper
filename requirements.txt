@@ -46,6 +46,24 @@ gradio==4.44.1
 gradio-client==1.3.0
 huggingface-hub==0.29.3
 
+# >>> CORREÇÃO DA CAUSA RAIZ DO "TypeError: unhashable type: 'dict'" <<<
+# -----------------------------------------------------------------------------
+# O Gradio 4.44.x chama templates.TemplateResponse(template, context) no
+# FORMATO ANTIGO. O Starlette >=0.42 (e FastAPI >=0.116, lançados em 2025)
+# MUDARAM a assinatura para TemplateResponse(request, name, context) e
+# REMOVERAM o formato antigo. Com o Starlette novo, o Gradio passa o template
+# como 1º argumento e o dict de contexto como 2º -> o Jinja2 tenta usar o dict
+# como chave de cache -> "TypeError: unhashable type: 'dict'" em TODA
+# requisição, derrubando o Space.
+#
+# SOLUÇÃO: fixar fastapi/starlette nas versões da época do Gradio 4.44.1
+# (nov/2024) que ainda aceitam o formato antigo. Testado LOCALMENTE:
+# reproduzimos o erro exato do HF e confirmamos o HTTP 200 após o fix.
+#   fastapi  == 0.115.14  (exige starlette <0.42)
+#   starlette == 0.41.3
+fastapi>=0.115,<0.116
+starlette>=0.40,<0.42
+
 # Decorator oficial do Hugging Face Spaces ZeroGPU (GPU NVIDIA gratuita).
 # Necessário apenas no HF Spaces; o código já trata a ausência dele nos
 # demais ambientes (vira um decorator neutro, sem efeito).
