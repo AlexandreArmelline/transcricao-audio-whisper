@@ -11,6 +11,14 @@ import threading
 import datetime
 import uuid
 
+# 1.1.1 Ativa as bibliotecas CUDA do ctranslate2 (se instaladas via pip)
+# -----------------------------------------------------------------------------
+# Deve rodar ANTES de qualquer import do faster-whisper/ctranslate2 (que tenta
+# carregar libcublas.so.12 ao ser importado). No ZeroGPU do HF Spaces as libs
+# vêm dos pacotes nvidia-*-cu12 em site-packages/nvidia/*/lib — este módulo as
+# localiza, ativa o LD_LIBRARY_PATH e as carrega via ctypes no processo.
+import config_cuda  # noqa: E402,F401  (efeito colateral intencional no import)
+
 # 1.2 Coloca a pasta backend/ no caminho de import do Python
 # -----------------------------------------------------------------------------
 # Este arquivo (app.py) fica na RAIZ do repositório e importa a lógica

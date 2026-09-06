@@ -4,10 +4,26 @@
 
 # 1.1 Importações da biblioteca padrão
 import os
+import sys
 import time
 import uuid
 import datetime
 import threading
+
+# 1.1.1 Ativa as bibliotecas CUDA do ctranslate2 (se instaladas via pip)
+# -----------------------------------------------------------------------------
+# No Hugging Face Spaces ZeroGPU as bibliotecas CUDA (libcublas.so.12 etc.)
+# NÃO vêm na imagem base — vêm dos pacotes pip nvidia-*-cu12 instalados no
+# requirements.txt. Este módulo localiza site-packages/nvidia/*/lib e ativa o
+# LD_LIBRARY_PATH + ctypes ANTES de o faster-whisper (ctranslate2) ser
+# importado/carregado. Em ambientes sem CUDA é um no-op inofensivo.
+CAMINHO_RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if CAMINHO_RAIZ not in sys.path:
+    sys.path.insert(0, CAMINHO_RAIZ)
+try:
+    import config_cuda  # noqa: F401  (efeito colateral intencional no import)
+except Exception:
+    pass  # módulo opcional — sem ele o app segue em CPU
 
 # 1.2 Importações de terceiros (Flask)
 from flask import (
@@ -196,6 +212,14 @@ def em_ambiente_hf_spaces():
     )
 
 
+# Permite FORÇAR o modo CPU manualmente (WHISPER_FORCE_CPU=1). Útil quando o
+# Space roda em hardware sem GPU real (CPU free) e não queremos nem TENTAR
+# device='cuda' (evita o erro de libcublas e a demora da 1ª tentativa).
+FORCAR_CPU = os.environ.get('WHISPER_FORCE_CPU', '').strip().lower() in (
+    '1', 'true', 'sim', 'yes',
+)
+
+
 # Tenta importar o decorator oficial do ZeroGPU (pacote `spaces`).
 # - No HF Spaces ZeroGPU: vira o decorator real (aloca GPU para a função).
 # - Em qualquer outro ambiente (local, Render, Railway...): vira um decorator
@@ -212,8 +236,16 @@ except Exception:  # noqa: BLE001 — pacote opcional ausente
         return funcao
 
 # Flag usada pelo app Gradio: True => transcrição deve usar a GPU (ZeroGPU).
-USAR_ZEROGPU = _ZEROGPU_DISPONIVEL and em_ambiente_hf_spaces()
-app.logger.info('ZeroGPU (Hugging Face): %s', 'ATIVO' if USAR_ZEROGPU else 'inativo')
+# FORCAR_CPU=1 força CPU (mesmo num Space HF sem GPU real).
+USAR_ZEROGPU = (
+    not FORCAR_CPU
+    and _ZEROGPU_DISPONIVEL
+    and em_ambiente_hf_spaces()
+)
+app.logger.info(
+    'ZeroGPU (Hugging Face): %s (FORCAR_CPU=%s)',
+    'ATIVO' if USAR_ZEROGPU else 'inativo', FORCAR_CPU,
+)
 
 # -----------------------------------------------------------------------------
 # Fim sub-bloco 1.4.3 Suporte ao Hugging Face Spaces ZeroGPU
@@ -291,12 +323,26 @@ def transcrever_com_whisper(caminho_audio, codigo_idioma):
             if USAR_ZEROGPU:
                 # No ZeroGPU: roda na GPU NVIDIA (A100) com float16
                 # (precisão máxima suportada em GPU e muito mais rápido).
-                _MODELO_CARREGADO = WhisperModel(
-                    MODELO_ATIVO,
-                    device='cuda',
-                    compute_type='float16',
-                    download_root=MODELOS_FOLDER,
-                )
+                # Se o CUDA falhar (libcublas.12 ausente), cai para CPU.
+                try:
+                    _MODELO_CARREGADO = WhisperModel(
+                        MODELO_ATIVO,
+                        device='cuda',
+                        compute_type='float16',
+                        download_root=MODELOS_FOLDER,
+                    )
+                except Exception:  # noqa: BLE001 — CUDA indisponível
+                    app.logger.warning(
+                        'GPU indisponível; usando CPU (int8_float32).'
+                    )
+                    _MODELO_CARREGADO = WhisperModel(
+                        'medium',  # large-v3 em CPU seria lento demais
+                        device='cpu',
+                        compute_type='int8_float32',
+                        cpu_threads=0,
+                        num_workers=1,
+                        download_root=MODELOS_FOLDER,
+                    )
             else:
                 # Em CPU: usa o compute_type escolhido pela RAM disponível
                 _MODELO_CARREGADO = WhisperModel(
@@ -359,12 +405,29 @@ def preaquecer_modelo():
                 flush=True,
             )
             if USAR_ZEROGPU:
-                _MODELO_CARREGADO = WhisperModel(
-                    MODELO_ATIVO,
-                    device='cuda',
-                    compute_type='float16',
-                    download_root=MODELOS_FOLDER,
-                )
+                # No ZeroGPU: roda na GPU NVIDIA (A100) com float16.
+                # Se o CUDA falhar (libcublas.12 ausente), cai para CPU.
+                try:
+                    _MODELO_CARREGADO = WhisperModel(
+                        MODELO_ATIVO,
+                        device='cuda',
+                        compute_type='float16',
+                        download_root=MODELOS_FOLDER,
+                    )
+                except Exception:  # noqa: BLE001 — CUDA indisponível
+                    print(
+                        '[preaquecimento] GPU indisponível; '
+                        'usando CPU (int8_float32).',
+                        flush=True,
+                    )
+                    _MODELO_CARREGADO = WhisperModel(
+                        MODELO_ATIVO,
+                        device='cpu',
+                        compute_type='int8_float32',
+                        cpu_threads=0,
+                        num_workers=1,
+                        download_root=MODELOS_FOLDER,
+                    )
             else:
                 _MODELO_CARREGADO = WhisperModel(
                     MODELO_ATIVO,

@@ -88,6 +88,19 @@ def transcrever_no_gpu(caminho_audio, codigo_idioma):
     """
     global _MODELO
 
+    # 2.1.0 Garante que as bibliotecas CUDA estejam ativas NESTE processo
+    # -------------------------------------------------------------------
+    # O decorator @spaces.GPU executa esta função em um worker/subprocesso
+    # com GPU. Esse processo reimporta os módulos do app — então o
+    # config_cuda (importado no topo do app.py) roda aqui também. Por
+    # segurança, chamamos a ativação explicitamente antes de importar o
+    # faster-whisper (ctranslate2), que procura libcublas.so.12 no load.
+    try:
+        from config_cuda import ativar_cuda  # import relativo ao projeto
+        ativar_cuda()
+    except Exception:
+        pass  # sem config_cuda (CPU) — segue o fluxo
+
     # 2.1.1 Importa o faster-whisper dentro da função (worker GPU)
     from faster_whisper import WhisperModel
 
@@ -95,18 +108,40 @@ def transcrever_no_gpu(caminho_audio, codigo_idioma):
     idioma = IDIOMAS_WHISPER.get(codigo_idioma, 'pt')
 
     # 2.1.3 Carrega o modelo apenas na primeira chamada (cache no worker)
+    # ---------------------------------------------------------------------
+    # Tenta PRIMEIRO na GPU (mais rápido). Se as bibliotecas CUDA não
+    # estiverem disponíveis (libcublas.12 etc.), cai para a CPU com um
+    # modelo MENOR (large-v3 em CPU de Space ficaria lento demais).
     if _MODELO is None:
-        print(
-            f'[ZeroGPU] Carregando modelo "{MODELO_ZEROGPU}" '
-            f'(compute_type={COMPUTE_ZEROGPU}) na GPU...',
-            flush=True,
-        )
-        _MODELO = WhisperModel(
-            MODELO_ZEROGPU,
-            device='cuda',
-            compute_type=COMPUTE_ZEROGPU,
-        )
-        print('[ZeroGPU] Modelo pronto na GPU!', flush=True)
+        try:
+            print(
+                f'[ZeroGPU] Carregando modelo "{MODELO_ZEROGPU}" '
+                f'(compute_type={COMPUTE_ZEROGPU}) na GPU...',
+                flush=True,
+            )
+            _MODELO = WhisperModel(
+                MODELO_ZEROGPU,
+                device='cuda',
+                compute_type=COMPUTE_ZEROGPU,
+            )
+            print('[ZeroGPU] Modelo pronto na GPU!', flush=True)
+        except Exception as erro:  # noqa: BLE001 — CUDA indisponível
+            # Fallback CPU: escolhe um modelo razoável (não o large-v3).
+            modelo_cpu = os.environ.get(
+                'WHISPER_MODEL_CPU_FALLBACK', 'medium'
+            ).strip()
+            print(
+                f'[ZeroGPU] GPU indisponível ({erro}). '
+                f'Usando CPU com modelo "{modelo_cpu}" (int8_float32)...',
+                flush=True,
+            )
+            _MODELO = WhisperModel(
+                modelo_cpu,
+                device='cpu',
+                compute_type='int8_float32',
+                cpu_threads=0,
+            )
+            print('[ZeroGPU] Modelo pronto na CPU (fallback)!', flush=True)
 
     # 2.1.4 Executa a transcrição com parâmetros de máxima precisão
     segmentos, _info = _MODELO.transcribe(

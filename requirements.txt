@@ -17,6 +17,19 @@ psutil>=5.9.0
 gunicorn>=21.2.0
 
 # -----------------------------------------------------------------------------
+# 1.1. Bibliotecas de runtime CUDA 12 (para o faster-whisper rodar em GPU)
+# -----------------------------------------------------------------------------
+# O faster-whisper usa o motor ctranslate2, que NÃO embute as bibliotecas
+# CUDA. No Hugging Face Spaces ZeroGPU a GPU NVIDIA é exposta, mas a imagem
+# base NÃO inclui libcublas.so.12/libcudnn.so.9 -> a transcrição falha com:
+#     "Library libcublas.12 is not found or cannot be loaded"
+# Instalamos as libs via pip (grava .so dentro de site-packages/nvidia/*/lib)
+# e o módulo config_cuda.py as localiza e ativa antes de carregar o modelo.
+nvidia-cublas-cu12>=12.1
+nvidia-cudnn-cu12>=9.1
+nvidia-cuda-runtime-cu12>=12.1
+
+# -----------------------------------------------------------------------------
 # 2. Interface web (SDK Gradio no Hugging Face Spaces)
 # -----------------------------------------------------------------------------
 # >>> CORREÇÃO DA CAUSA RAIZ DO "TypeError: argument of type 'bool' is not
