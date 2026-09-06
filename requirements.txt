@@ -4,33 +4,37 @@
 # IMPORTANTE (Hugging Face Spaces / ZeroGPU):
 #   O HF Spaces monta APENAS este arquivo em /tmp/requirements.txt durante o
 #   build. Por isso NÃO podemos usar "-r backend/requirements.txt" (referência
-#   a outro arquivo) — o pip não encontra o caminho relativo e o build falha
-#   com: "Could not open requirements file: /tmp/backend/requirements.txt".
-#   Todas as dependências (backend + interface Gradio) estão AQUI, unificadas.
+#   a outro arquivo). Todas as dependências (backend + interface Gradio)
+#   estão AQUI, unificadas.
 # =============================================================================
 
 # -----------------------------------------------------------------------------
 # 1. Backend — Sistema de Transcrição de Áudio
 # -----------------------------------------------------------------------------
-
-# Framework web (backend Flask)
 Flask>=3.0.0
-
-# Transcrição de áudio com IA (Whisper otimizado — roda em CPU e GPU)
 faster-whisper>=1.0.0
-
-# Detecção de memória RAM disponível (escolhe o melhor modelo Whisper)
 psutil>=5.9.0
-
-# Servidor WSGI de produção (usado em deploy via Procfile / gunicorn)
 gunicorn>=21.2.0
 
 # -----------------------------------------------------------------------------
 # 2. Interface web (SDK Gradio no Hugging Face Spaces)
 # -----------------------------------------------------------------------------
-
-# Interface Gradio (obrigatória no HF Spaces — SDK do Space)
-gradio>=4.44.0
+# >>> CORREÇÃO DA CAUSA RAIZ DO "TypeError: argument of type 'bool' is not
+#     iterable" <<<
+# O que aconteceu: o pip instalou o Gradio 4.44.x (nossa regra >=4.44.0) mas
+# resolveu a dependência gradio-client para a versão MAIS NOVA disponível
+# (1.6+/1.7+, feita para o Gradio 5). Essa mistura (Gradio 4 + gradio-client
+# novo) quebra a geração do schema da API: o gradio_client novo não sabe ler
+# o schema "additionalProperties: true" que o Gradio 4 produz, e todo acesso
+# à página cai com "TypeError: argument of type 'bool' is not iterable".
+#
+# SOLUÇÃO: fixar o TRIPÉ de versões que foram testadas JUNTAS:
+#   gradio==4.44.1  +  gradio-client==1.3.0  +  huggingface-hub==0.29.3
+# (o huggingface-hub 0.29.x é o último da série 0.x que ainda exporta o
+#  HfFolder usado internamente pelo Gradio 4.44.1 em gradio/oauth.py).
+gradio==4.44.1
+gradio-client==1.3.0
+huggingface-hub==0.29.3
 
 # Decorator oficial do Hugging Face Spaces ZeroGPU (GPU NVIDIA gratuita).
 # Necessário apenas no HF Spaces; o código já trata a ausência dele nos
@@ -38,29 +42,12 @@ gradio>=4.44.0
 spaces>=0.30.0
 
 # -----------------------------------------------------------------------------
-# 3. CORREÇÃO DE COMPATIBILIDADE (Hugging Face Spaces / ZeroGPU)
-# -----------------------------------------------------------------------------
-
-# PROBLEMA: o template do HF Spaces instala automaticamente "huggingface-hub"
-# na versão mais recente (hoje 1.x). Essa versão REMOVEU o módulo HfFolder,
-# que o Gradio 4.44.1 ainda importa internamente em gradio/oauth.py:
-#   ImportError: cannot import name 'HfFolder' from 'huggingface_hub'
-# → o app falha ao iniciar (Runtime Error).
-
-# SOLUÇÃO: fixar huggingface-hub na última versão da série 0.x (0.29.3),
-# que AINDA contém o módulo HfFolder. O pip resolve a restrição mais
-# específica e instala esta versão mesmo que o HF tenha pedido >=0.30.
-huggingface-hub==0.29.3
-
-# OBSERVAÇÃO: se um dia o Gradio for atualizado para uma versão que use
-# o novo huggingface-hub (>=1.0), esta linha pode ser removida/ajustada.
-
-# -----------------------------------------------------------------------------
 # OBSERVAÇÕES GERAIS:
 # 1. faster-whisper baixa automaticamente o modelo Whisper escolhido na
 #    PRIMEIRA transcrição (precisa de internet nesse momento).
 # 2. O build do HF Spaces já adiciona automaticamente: torch, datasets,
-#    uvicorn e websockets (versões fixadas por eles).
-# 3. Em plataformas Windows locais, use waitress no lugar do gunicorn
-#    (gunicorn só funciona em Linux/macOS).
+#    uvicorn, websockets e ffmpeg.
+# 3. NÃO atualize "gradio" sozinho (ex.: para 5.x) sem atualizar também o
+#    "gradio-client" e reavaliar o "huggingface-hub" — é exatamente essa
+#    mistura de versões que derruba o Space em runtime.
 # =============================================================================
