@@ -21,17 +21,27 @@ gunicorn>=21.2.0
 # -----------------------------------------------------------------------------
 # >>> CORREÇÃO DA CAUSA RAIZ DO "TypeError: argument of type 'bool' is not
 #     iterable" <<<
-# O que aconteceu: o pip instalou o Gradio 4.44.x (nossa regra >=4.44.0) mas
-# resolveu a dependência gradio-client para a versão MAIS NOVA disponível
-# (1.6+/1.7+, feita para o Gradio 5). Essa mistura (Gradio 4 + gradio-client
-# novo) quebra a geração do schema da API: o gradio_client novo não sabe ler
-# o schema "additionalProperties: true" que o Gradio 4 produz, e todo acesso
-# à página cai com "TypeError: argument of type 'bool' is not iterable".
 #
-# SOLUÇÃO: fixar o TRIPÉ de versões que foram testadas JUNTAS:
+# A CAUSA RAIZ foi identificada com reprodução LOCAL do bug:
+# -----------------------------------------------------------------------------
+# O pydantic 2.11+ mudou a forma de serializar o schema JSON de objetos com
+# valores livres (ex.: o "meta" do gr.File/gr.Audio). Antes (<=2.10) o schema
+# trazia  "additionalProperties": {} (dict vazio). A partir do 2.11 passou a
+# trazer "additionalProperties": true (BOOLEANO). O gradio-client embutido no
+# Gradio 4.44.x chama _json_schema_to_python_type(schema['additionalProperties'])
+# e, ao receber True (bool), executa 'const' in True -> TypeError: argument of
+# type 'bool' is not iterable. Esse erro derruba o get_api_info() do Gradio em
+# TODA requisição, fazendo o Space morrer no runtime (e depois pedir share=True).
+#
+# SOLUÇÃO: travar o pydantic na versão 2.10.x (a última que gera
+# "additionalProperties": {} e é 100% compatível com o Gradio 4.44.1).
+# Sem este pin, o pip instala o pydantic mais novo (2.13.x) e o erro volta.
+pydantic>=2.7.0,<2.11
+
+# Versões do Gradio 4.44.1 testadas JUNTAS com o pydantic acima:
 #   gradio==4.44.1  +  gradio-client==1.3.0  +  huggingface-hub==0.29.3
-# (o huggingface-hub 0.29.x é o último da série 0.x que ainda exporta o
-#  HfFolder usado internamente pelo Gradio 4.44.1 em gradio/oauth.py).
+# (o gradio 4.44.1 exige gradio-client EXATAMENTE 1.3.0; o huggingface-hub
+#  0.29.x é o último da série 0.x que exporta o HfFolder usado pelo Gradio).
 gradio==4.44.1
 gradio-client==1.3.0
 huggingface-hub==0.29.3
