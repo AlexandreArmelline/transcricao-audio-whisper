@@ -1,16 +1,48 @@
 # =============================================================================
-# requirements.txt (raiz) — usado pelo Hugging Face Spaces (SDK Gradio) e por
-# plataformas que esperam as dependências na raiz do repositório.
-#
-# O backend/requirements.txt já traz: Flask, faster-whisper, psutil, gunicorn.
-# Aqui adicionamos o Gradio (interface web do HF Spaces) ao conjunto.
+# requirements.txt (raiz) — DEPENDÊNCIAS UNIFICADAS
+# -----------------------------------------------------------------------------
+# IMPORTANTE (Hugging Face Spaces / ZeroGPU):
+#   O HF Spaces monta APENAS este arquivo em /tmp/requirements.txt durante o
+#   build. Por isso NÃO podemos usar "-r backend/requirements.txt" (referência
+#   a outro arquivo) — o pip não encontra o caminho relativo e o build falha
+#   com: "Could not open requirements file: /tmp/backend/requirements.txt".
+#   Todas as dependências (backend + interface Gradio) estão AQUI, unificadas.
 # =============================================================================
--r backend/requirements.txt
 
-# Interface web (SDK Gradio no Hugging Face Spaces - plano gratuito)
+# -----------------------------------------------------------------------------
+# 1. Backend — Sistema de Transcrição de Áudio
+# -----------------------------------------------------------------------------
+
+# Framework web (backend Flask)
+Flask>=3.0.0
+
+# Transcrição de áudio com IA (Whisper otimizado — roda em CPU e GPU)
+faster-whisper>=1.0.0
+
+# Detecção de memória RAM disponível (escolhe o melhor modelo Whisper)
+psutil>=5.9.0
+
+# Servidor WSGI de produção (usado em deploy via Procfile / gunicorn)
+gunicorn>=21.2.0
+
+# -----------------------------------------------------------------------------
+# 2. Interface web (SDK Gradio no Hugging Face Spaces)
+# -----------------------------------------------------------------------------
+
+# Interface Gradio (obrigatória no HF Spaces — SDK do Space)
 gradio>=4.44.0
 
 # Decorator oficial do Hugging Face Spaces ZeroGPU (GPU NVIDIA gratuita).
 # Necessário apenas no HF Spaces; o código já trata a ausência dele nos
 # demais ambientes (vira um decorator neutro, sem efeito).
 spaces>=0.30.0
+
+# -----------------------------------------------------------------------------
+# OBSERVAÇÕES:
+# 1. faster-whisper baixa automaticamente o modelo Whisper escolhido na
+#    PRIMEIRA transcrição (precisa de internet nesse momento).
+# 2. O build do HF Spaces já adiciona automaticamente: torch, datasets,
+#    huggingface-hub, uvicorn e websockets (versões fixadas por eles).
+# 3. Em plataformas Windows locais, use waitress no lugar do gunicorn
+#    (gunicorn só funciona em Linux/macOS).
+# =============================================================================
